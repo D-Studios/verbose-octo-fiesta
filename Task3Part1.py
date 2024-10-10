@@ -105,13 +105,11 @@ def RSA_Encryption(M) :
 	print("Encryption : " , C)
 
 
-def RSA_Setup(M):
+def RSA_Setup():
 	global publicKey, privateKey
-	n = -1
-	while n<=M:
-		p = sympy.randprime(2, pow(2, 2048))
-		q = sympy.randprime(2, pow(2,2048))
-		n = p * q
+	p = sympy.randprime(pow(2,2047), pow(2, 2048))
+	q = sympy.randprime(pow(2,2047), pow(2,2048))
+	n = p * q	
 	eulerTotientFunction = (p-1) * (q-1)
 	e = 65537
 	d = mod_inverse(e, eulerTotientFunction)
@@ -121,7 +119,7 @@ def RSA_Setup(M):
 def main():
 	plaintext = input("Enter plaintext : ")
 	M = int(plaintext.encode('utf-8').hex(), 16)
-	RSA_Setup(M)
+	RSA_Setup()
 	RSA_Encryption(M)
 	RSA_Decryption()
 

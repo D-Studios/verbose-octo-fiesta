@@ -22,6 +22,8 @@ BLOCKSIZE = 16
 C = 0
 publicKey = [0, 0]
 privateKey = [0,0]
+random.seed(42)
+c0 = 0
 
 
 def xorFunction(input_bytes, key_bytes):
@@ -86,6 +88,8 @@ def generate_random_iv(length):
 	random_iv = bytes(random.getrandbits(8) for i in range(length))
 	return random_iv
 
+iv = generate_random_iv(16)
+
 def numberToHexToString(num):
 	hex_string = hex(num)[2:]
 	if len(hex_string) % 2 != 0:
@@ -94,45 +98,53 @@ def numberToHexToString(num):
 	result_string = byte_array.decode('utf-8')
 	return result_string
 
-def RSA_Decryption() :
-	global C, privateKey
-	M = pow(C, privateKey[0], privateKey[1])
-	print("Decryption : ", numberToHexToString(M))
-
-def RSA_Encryption(M) : 
-	global C, publicKey
-	C = pow(M, publicKey[0], publicKey[1])
-	print("Encryption : " , C)
+def mallory2():
+	global c0, iv
+	s = 0
+	hash_object = hashlib.sha256()
+	hash_object.update(str(s).encode('utf-8'))
+	k = hash_object.digest()[:16]
+	print("Mallory decrypted : ", cbc_decrypt(c0, k, iv))
 
 
-def RSA_Setup(M):
+def alice2():
+	global c0, privateKey, iv
+	s = pow(C, privateKey[0], privateKey[1])
+	hash_object = hashlib.sha256()
+	hash_object.update(str(s).encode('utf-8'))
+	k = hash_object.digest()[:16]
+	m = "Hi Bob!".encode('utf-8')
+	c0 = cbc_encrypt(m, k, iv)
+	print("Encryption : ", c0)
+	print("Decryption : ", cbc_decrypt(c0, k, iv))
+	mallory2()
+
+def mallory():
+	global C 
+	# malloryC = C
+	malloryC = 0
+	C = malloryC
+	alice2()
+
+def bob1():
+	global publicKey, C
+	s = int(generate_random_key(2048).hex(), 16)
+	C = pow(s, publicKey[0], publicKey[1])
+	mallory()
+
+def alice1():
 	global publicKey, privateKey
-	n = -1
-	while n<=M:
-		p = sympy.randprime(2, pow(2, 2048))
-		q = sympy.randprime(2, pow(2,2048))
-		n = p * q
+	p = sympy.randprime(pow(2,2047), pow(2, 2048))
+	q = sympy.randprime(pow(2,2047), pow(2,2048))
+	n = p * q	
 	eulerTotientFunction = (p-1) * (q-1)
 	e = 65537
 	d = mod_inverse(e, eulerTotientFunction)
 	publicKey = [e, n]
 	privateKey = [d, n]
+	bob1()
 
-def alice1():
-	global publicKey, privateKey
-	M = int("Hi Bob!".encode('utf-8').hex(), 16)
-	n = -1
-	while n<=M:
-		p = sympy.randprime(2, pow(2, 2048))
-		q = sympy.randprime(2, pow(2,2048))
-		n = p * q
-	eulerTotientFunction = (p-1) * (q-1)
-	e = 65537
 def main():
-	plaintext = input("Enter plaintext : ")
-	M = int(plaintext.encode('utf-8').hex(), 16)
-	RSA_Setup(M)
-	RSA_Encryption(M)
-	RSA_Decryption()
+	alice1()
 
 main()
